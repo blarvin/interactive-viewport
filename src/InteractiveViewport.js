@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 
 const InteractiveViewport = () => {
   const [scale, setScale] = useState(1);
@@ -21,23 +21,24 @@ const InteractiveViewport = () => {
     return circles;
   }, []);
 
-  const zoom = (clientX, clientY, factor) => {
-    setScale(prevScale => {
-      const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
-      const containerRect = containerRef.current.getBoundingClientRect();
-      
-      // Calculate the position of the zoom point relative to the content
-      const zoomX = (clientX - containerRect.left) / prevScale + position.x;
-      const zoomY = (clientY - containerRect.top) / prevScale + position.y;
-      
-      // Calculate new position to keep the zoom point stationary
-      const newX = zoomX - (clientX - containerRect.left) / newScale;
-      const newY = zoomY - (clientY - containerRect.top) / newScale;
-      
-      setPosition({ x: newX, y: newY });
-      return newScale;
-    });
-  };
+    const zoom = useCallback((clientX, clientY, factor) => {
+        setScale((prevScale) => {
+            const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
+            const containerRect = containerRef.current.getBoundingClientRect();
+
+            // Calculate the position of the zoom point relative to the content
+            const zoomX = (clientX - containerRect.left) / prevScale + position.x;
+            const zoomY = (clientY - containerRect.top) / prevScale + position.y;
+
+            // Calculate new position to keep the zoom point stationary
+            const newX = zoomX - (clientX - containerRect.left) / newScale;
+            const newY = zoomY - (clientY - containerRect.top) / newScale;
+
+            setPosition({ x: newX, y: newY });
+            return newScale;
+        });
+    }, [position.x, position.y]); // Only recreate if position changes
+
 
   useEffect(() => {
     const container = containerRef.current;
@@ -50,22 +51,30 @@ const InteractiveViewport = () => {
     const handleTouchMove = (e) => {
       e.preventDefault();
       const touch = e.touches;
-      
-      if (lastTouchRef.current && lastTouchRef.current.length === touch.length) {
+
+      if (
+        lastTouchRef.current &&
+        lastTouchRef.current.length === touch.length
+      ) {
         if (touch.length === 1) {
           // Pan
-          const deltaX = (touch[0].clientX - lastTouchRef.current[0].clientX) / scale;
-          const deltaY = (touch[0].clientY - lastTouchRef.current[0].clientY) / scale;
-          setPosition(prev => ({
+          const deltaX =
+            (touch[0].clientX - lastTouchRef.current[0].clientX) / scale;
+          const deltaY =
+            (touch[0].clientY - lastTouchRef.current[0].clientY) / scale;
+          setPosition((prev) => ({
             x: prev.x - deltaX,
             y: prev.y - deltaY,
           }));
         } else if (touch.length === 2) {
           // Zoom
-          const prevDist = getDistance(lastTouchRef.current[0], lastTouchRef.current[1]);
+          const prevDist = getDistance(
+            lastTouchRef.current[0],
+            lastTouchRef.current[1]
+          );
           const currentDist = getDistance(touch[0], touch[1]);
           const factor = currentDist / prevDist;
-          
+
           const midpoint = getMidpoint(touch[0], touch[1]);
           zoom(midpoint.x, midpoint.y, factor);
         }
@@ -94,7 +103,7 @@ const InteractiveViewport = () => {
       if (isDraggingRef.current) {
         const deltaX = (e.clientX - lastMousePosRef.current.x) / scale;
         const deltaY = (e.clientY - lastMousePosRef.current.y) / scale;
-        setPosition(prev => ({
+        setPosition((prev) => ({
           x: prev.x - deltaX,
           y: prev.y - deltaY,
         }));
@@ -106,24 +115,28 @@ const InteractiveViewport = () => {
       isDraggingRef.current = false;
     };
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: false });
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    container.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    container.addEventListener("touchend", handleTouchEnd, { passive: false });
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [scale, position]);
+  }, [scale, position, zoom]);
 
   const getDistance = (touch1, touch2) => {
     const dx = touch1.clientX - touch2.clientX;
@@ -143,37 +156,41 @@ const InteractiveViewport = () => {
       <div
         ref={containerRef}
         className="w-full h-full overflow-hidden touch-none cursor-move"
-        style={{ backgroundColor: '#f0f0f0' }}
+        style={{ 
+          backgroundColor: "#f0f0f0",
+          overflow: "hidden",
+        }}
       >
         <div
           ref={contentRef}
           style={{
             transform: `scale(${scale}) translate(${-position.x}px, ${-position.y}px)`,
-            transformOrigin: '0 0',
-            width: '4000px',
-            height: '4000px',
-            position: 'relative',
-            backgroundColor: 'white',
+            transformOrigin: "0 0",
+            width: "4000px",
+            height: "4000px",
+            position: "relative",
+            backgroundColor: "white",
           }}
         >
           {fixedCircles.map((circle, index) => (
             <div
               key={index}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 left: `${circle.x}px`,
                 top: `${circle.y}px`,
                 width: `${circle.size}px`,
                 height: `${circle.size}px`,
                 backgroundColor: circle.color,
-                borderRadius: '50%',
+                borderRadius: "50%",
               }}
             />
           ))}
         </div>
       </div>
       <div className="absolute bottom-2 left-2 bg-white p-2 rounded shadow">
-        Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y: {position.y.toFixed(0)}
+        Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
+        {position.y.toFixed(0)}
       </div>
     </div>
   );
