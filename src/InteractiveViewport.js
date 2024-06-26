@@ -1,44 +1,108 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  //   useMemo,
+  useCallback,
+} from "react";
 
 const InteractiveViewport = () => {
+  const GRID_SIZE = 100; // Size of one grid square in pixels
+  const GRID_COLOR = "#cccccc";
+  const LABEL_COLOR = "#999999";
+
   const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({
+    x: -window.innerWidth / 2,
+    y: -window.innerHeight / 2,
+  });
   const containerRef = useRef(null);
-  const contentRef = useRef(null);
+  const canvasRef = useRef(null);
   const lastTouchRef = useRef(null);
   const isDraggingRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-  const fixedCircles = useMemo(() => {
-    const circles = [];
-    for (let i = 0; i < 200; i++) {
-      const size = Math.random() * 80 + 20;
-      const x = Math.random() * 4000;
-      const y = Math.random() * 4000;
-      const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-      circles.push({ size, x, y, color });
-    }
-    return circles;
+  const createGridPattern = useCallback((ctx) => {
+    const patternCanvas = document.createElement("canvas");
+    patternCanvas.width = GRID_SIZE;
+    patternCanvas.height = GRID_SIZE;
+    const patternCtx = patternCanvas.getContext("2d");
+
+    // Draw grid lines
+    patternCtx.strokeStyle = GRID_COLOR;
+    patternCtx.lineWidth = 1;
+    patternCtx.beginPath();
+    patternCtx.moveTo(0, 0);
+    patternCtx.lineTo(GRID_SIZE, 0);
+    patternCtx.moveTo(0, 0);
+    patternCtx.lineTo(0, GRID_SIZE);
+    patternCtx.stroke();
+
+    // Create pattern
+    return ctx.createPattern(patternCanvas, "repeat");
   }, []);
 
-    const zoom = useCallback((clientX, clientY, factor) => {
-        setScale((prevScale) => {
-            const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
-            const containerRect = containerRef.current.getBoundingClientRect();
+  const drawGrid = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const { width, height } = canvas.getBoundingClientRect();
 
-            // Calculate the position of the zoom point relative to the content
-            const zoomX = (clientX - containerRect.left) / prevScale + position.x;
-            const zoomY = (clientY - containerRect.top) / prevScale + position.y;
+    canvas.width = width;
+    canvas.height = height;
 
-            // Calculate new position to keep the zoom point stationary
-            const newX = zoomX - (clientX - containerRect.left) / newScale;
-            const newY = zoomY - (clientY - containerRect.top) / newScale;
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.translate(-position.x, -position.y);
 
-            setPosition({ x: newX, y: newY });
-            return newScale;
-        });
-    }, [position.x, position.y]); // Only recreate if position changes
+    // Fill with grid pattern
+    const pattern = createGridPattern(ctx);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(position.x, position.y, width / scale, height / scale);
 
+    // Draw labels
+    ctx.fillStyle = LABEL_COLOR;
+    ctx.font = `${12 / scale}px Arial`;
+    for (
+      let x = Math.floor(position.x / GRID_SIZE);
+      x < (position.x + width / scale) / GRID_SIZE;
+      x++
+    ) {
+      for (
+        let y = Math.floor(position.y / GRID_SIZE);
+        y < (position.y + height / scale) / GRID_SIZE;
+        y++
+      ) {
+        ctx.fillText(`${x},${y}`, x * GRID_SIZE + 5, y * GRID_SIZE + 15);
+      }
+    }
+
+    ctx.restore();
+  }, [scale, position, createGridPattern]);
+
+  useEffect(() => {
+    drawGrid();
+  }, [drawGrid]);
+
+  const zoom = useCallback(
+    (clientX, clientY, factor) => {
+      setScale((prevScale) => {
+        const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
+        const containerRect = containerRef.current.getBoundingClientRect();
+
+        // Calculate the position of the zoom point relative to the content
+        const zoomX = (clientX - containerRect.left) / prevScale + position.x;
+        const zoomY = (clientY - containerRect.top) / prevScale + position.y;
+
+        // Calculate new position to keep the zoom point stationary
+        const newX = zoomX - (clientX - containerRect.left) / newScale;
+        const newY = zoomY - (clientY - containerRect.top) / newScale;
+
+        setPosition({ x: newX, y: newY });
+        return newScale;
+      });
+    },
+    [position.x, position.y]
+  ); // Only recreate if position changes
 
   useEffect(() => {
     const container = containerRef.current;
@@ -151,47 +215,22 @@ const InteractiveViewport = () => {
     };
   };
 
+
   return (
-    <div className="relative w-full h-[400px] overflow-hidden border-2 border-gray-300 rounded-lg">
-      <div
-        ref={containerRef}
-        className="w-full h-full overflow-hidden touch-none cursor-move"
-        style={{ 
-          backgroundColor: "#f0f0f0",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          ref={contentRef}
-          style={{
-            transform: `scale(${scale}) translate(${-position.x}px, ${-position.y}px)`,
-            transformOrigin: "0 0",
-            width: "4000px",
-            height: "4000px",
-            position: "relative",
-            backgroundColor: "white",
-          }}
-        >
-          {fixedCircles.map((circle, index) => (
-            <div
-              key={index}
-              style={{
-                position: "absolute",
-                left: `${circle.x}px`,
-                top: `${circle.y}px`,
-                width: `${circle.size}px`,
-                height: `${circle.size}px`,
-                backgroundColor: circle.color,
-                borderRadius: "50%",
-              }}
-            />
-          ))}
+    <div className="interactive-viewport">
+      <div ref={containerRef} className="viewport-container">
+        <canvas
+          ref={canvasRef}
+          className="viewport-canvas"
+          style={{ width: "100%", height: "100%" }}
+        />
+        <div className="viewport-info">
+          Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
+          {position.y.toFixed(0)}
         </div>
       </div>
-      <div className="absolute bottom-2 left-2 bg-white p-2 rounded shadow">
-        Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
-        {position.y.toFixed(0)}
-      </div>
+      Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
+      {position.y.toFixed(0)}
     </div>
   );
 };

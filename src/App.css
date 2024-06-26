@@ -1,38 +1,90 @@
-.App {
-  text-align: center;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.interactive-viewport-wrapper {
+  position: absolute;
+  left: 1%;
+  right: 1%;
+  bottom: 1.5%;
+  height: 86%;
+  border: 2px solid #e21010;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.viewport-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  cursor: move;
+  background-color: #f0f0f0;
 }
+
+.viewport-content {
+  width: 10000px;
+  height: 10000px;
+  position: relative;
+  background-color: white;
+}
+
+.viewport-content {
+  width: 200vmin;
+  height: 200vmin;
+  position: relative;
+  background-color: white;
+}
+
+.grid-square {
+  position: absolute;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.grid-label {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 2vmin;
+  color: #999;
+}
+
+.interactive-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewport-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.viewport-info {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: white;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+
+
+

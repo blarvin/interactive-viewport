@@ -1,11 +1,18 @@
-import React from 'react';
-import InteractiveViewport from './InteractiveViewport';
+import React from "react";
+import InteractiveViewport from "./InteractiveViewport";
+import "./App.css";
 
 function App() {
   return (
-    <div className="App">
-      <h1>Interactive Viewport Demo</h1>
-      <InteractiveViewport />
+    <div className="app">
+      {/* <div className="top-section">
+        <p>This is the top 14% area</p>
+      </div> */}
+      <div className="viewport-container">
+        <div className="interactive-viewport-wrapper">
+          <InteractiveViewport />
+        </div>
+      </div>
     </div>
   );
 }
