@@ -7,15 +7,13 @@ import React, {
 } from "react";
 
 const InteractiveViewport = () => {
-  const GRID_SIZE = 100; // Size of one grid square in pixels
+  const GRID_SIZE = 50; // Size of one grid square in pixels
   const GRID_COLOR = "#cccccc";
   const LABEL_COLOR = "#999999";
 
   const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({
-    x: -window.innerWidth / 2,
-    y: -window.innerHeight / 2,
-  });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const lastTouchRef = useRef(null);
@@ -30,7 +28,7 @@ const InteractiveViewport = () => {
 
     // Draw grid lines
     patternCtx.strokeStyle = GRID_COLOR;
-    patternCtx.lineWidth = 1;
+    patternCtx.lineWidth = 2;
     patternCtx.beginPath();
     patternCtx.moveTo(0, 0);
     patternCtx.lineTo(GRID_SIZE, 0);
@@ -61,18 +59,25 @@ const InteractiveViewport = () => {
 
     // Draw labels
     ctx.fillStyle = LABEL_COLOR;
-    ctx.font = `${12 / scale}px Arial`;
-    for (
-      let x = Math.floor(position.x / GRID_SIZE);
-      x < (position.x + width / scale) / GRID_SIZE;
-      x++
-    ) {
-      for (
-        let y = Math.floor(position.y / GRID_SIZE);
-        y < (position.y + height / scale) / GRID_SIZE;
-        y++
-      ) {
-        ctx.fillText(`${x},${y}`, x * GRID_SIZE + 5, y * GRID_SIZE + 15);
+    const fontSize = Math.max(10, Math.min(14, 12 / scale));
+    ctx.font = `${fontSize}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const startX = Math.floor(position.x / GRID_SIZE);
+    const startY = Math.floor(position.y / GRID_SIZE);
+    const endX = Math.ceil((position.x + width / scale) / GRID_SIZE);
+    const endY = Math.ceil((position.y + height / scale) / GRID_SIZE);
+
+    for (let x = startX; x < endX; x++) {
+      for (let y = startY; y < endY; y++) {
+        const centerX = x * GRID_SIZE + GRID_SIZE / 2;
+        const centerY = y * GRID_SIZE + GRID_SIZE / 2;
+
+        // Only draw label if it will be large enough to be legible
+        if (fontSize * scale >= 6) {
+          ctx.fillText(`${x},${y}`, centerX, centerY);
+        }
       }
     }
 
@@ -214,7 +219,6 @@ const InteractiveViewport = () => {
       y: (touch1.clientY + touch2.clientY) / 2,
     };
   };
-
 
   return (
     <div className="interactive-viewport">
