@@ -1,0 +1,27 @@
+.ribbon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    background-color: #f0f0f0;
+  }
+  
+  .ribbon-button {
+    flex: 1;
+    min-width: 120px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 3px solid;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .ribbon-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  

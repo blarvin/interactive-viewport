@@ -32,8 +32,8 @@ html, body, #root {
 }
 
 .viewport-content {
-  width: 10000px;
-  height: 10000px;
+  width: 5000px;
+  height: 5000px;
   position: relative;
   background-color: white;
 }
@@ -82,7 +82,29 @@ html, body, #root {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Full viewport height */
+}
 
+.ribbon {
+  /* Add any specific styles for your ribbon here */
+  /* For example: */
+  padding: 5px;
+  background-color: #f0f0f0a6;
+  margin-left: 1%;
+  margin-right: 1%;
+  border: 2px solid #12f3ff;
+}
+
+.workspace {
+  flex-grow: 1;
+  overflow: hidden; /* In case the content is larger than the available space */
+  /* Adjust these values as needed to match your desired padding */
+  margin: 1%;
+  border: 2px solid #e21010;
+}
 
 
 

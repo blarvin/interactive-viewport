@@ -1,17 +1,14 @@
-import React from "react";
-import WorkspaceComponent from "./components/WorkspaceComponent";
-import "./App.css";
+import React from 'react';
+import './App.css';
+import RibbonComponent from './components/RibbonComponent';
+import WorkspaceComponent from './components/WorkspaceComponent';
 
 function App() {
   return (
-    <div className="app">
-      {/* <div className="top-section">
-        <p>This is the top 14% area</p>
-      </div> */}
-      <div className="viewport-container">
-        <div className="interactive-viewport-wrapper">
-          <WorkspaceComponent />
-        </div>
+    <div className="App">
+      <RibbonComponent />
+      <div className="workspace">
+        <WorkspaceComponent />
       </div>
     </div>
   );
