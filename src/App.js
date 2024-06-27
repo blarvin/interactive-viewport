@@ -1,5 +1,5 @@
 import React from "react";
-import InteractiveViewport from "./InteractiveViewport";
+import WorkspaceComponent from "./components/WorkspaceComponent";
 import "./App.css";
 
 function App() {
@@ -10,7 +10,7 @@ function App() {
       </div> */}
       <div className="viewport-container">
         <div className="interactive-viewport-wrapper">
-          <InteractiveViewport />
+          <WorkspaceComponent />
         </div>
       </div>
     </div>
