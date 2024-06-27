@@ -1,17 +1,28 @@
+// src/components/WorkspaceComponent.js
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import GridComponent from "./GridComponent";
+import KardRenderer from "./KardRenderer";
+import useKards from "../hooks/useKards";
+import { useKollection } from '../contexts/KollectionContext';
 
 const WorkspaceComponent = () => {
+  const { activeKollectionUUID } = useKollection();
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const containerRef = useRef(null);
-  const lastTouchRef = useRef(null);
   const isDraggingRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-  // Effect to set initial dimensions and update on resize
+  const { kards, loadKards } = useKards(activeKollectionUUID);
+
+  useEffect(() => {
+    if (activeKollectionUUID) {
+      loadKards(activeKollectionUUID);
+    }
+  }, [activeKollectionUUID, loadKards]);
+
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -22,71 +33,29 @@ const WorkspaceComponent = () => {
       }
     };
 
-    updateDimensions(); // Set initial dimensions
+    updateDimensions();
     window.addEventListener('resize', updateDimensions);
-
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  const zoom = useCallback(
-    (clientX, clientY, factor) => {
-      setScale((prevScale) => {
-        const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
-        const containerRect = containerRef.current.getBoundingClientRect();
+  const zoom = useCallback((clientX, clientY, factor) => {
+    setScale(prevScale => {
+      const newScale = Math.max(0.1, Math.min(prevScale * factor, 5));
+      const containerRect = containerRef.current.getBoundingClientRect();
 
-        // Calculate the position of the zoom point relative to the content
-        const zoomX = (clientX - containerRect.left) / prevScale + position.x;
-        const zoomY = (clientY - containerRect.top) / prevScale + position.y;
+      const zoomX = (clientX - containerRect.left) / prevScale + position.x;
+      const zoomY = (clientY - containerRect.top) / prevScale + position.y;
 
-        // Calculate new position to keep the zoom point stationary
-        const newX = zoomX - (clientX - containerRect.left) / newScale;
-        const newY = zoomY - (clientY - containerRect.top) / newScale;
+      const newX = zoomX - (clientX - containerRect.left) / newScale;
+      const newY = zoomY - (clientY - containerRect.top) / newScale;
 
-        setPosition({ x: newX, y: newY });
-        return newScale;
-      });
-    },
-    [position.x, position.y]
-  );
+      setPosition({ x: newX, y: newY });
+      return newScale;
+    });
+  }, [position.x, position.y]);
 
   useEffect(() => {
     const container = containerRef.current;
-
-    const handleTouchStart = (e) => {
-      e.preventDefault();
-      lastTouchRef.current = e.touches;
-    };
-
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-      const touch = e.touches;
-
-      if (lastTouchRef.current && lastTouchRef.current.length === touch.length) {
-        if (touch.length === 1) {
-          // Pan
-          const deltaX = (touch[0].clientX - lastTouchRef.current[0].clientX) / scale;
-          const deltaY = (touch[0].clientY - lastTouchRef.current[0].clientY) / scale;
-          setPosition((prev) => ({
-            x: prev.x - deltaX,
-            y: prev.y - deltaY,
-          }));
-        } else if (touch.length === 2) {
-          // Zoom
-          const prevDist = getDistance(lastTouchRef.current[0], lastTouchRef.current[1]);
-          const currentDist = getDistance(touch[0], touch[1]);
-          const factor = currentDist / prevDist;
-
-          const midpoint = getMidpoint(touch[0], touch[1]);
-          zoom(midpoint.x, midpoint.y, factor);
-        }
-      }
-      lastTouchRef.current = touch;
-    };
-
-    const handleTouchEnd = (e) => {
-      e.preventDefault();
-      lastTouchRef.current = null;
-    };
 
     const handleWheel = (e) => {
       e.preventDefault();
@@ -104,7 +73,7 @@ const WorkspaceComponent = () => {
       if (isDraggingRef.current) {
         const deltaX = (e.clientX - lastMousePosRef.current.x) / scale;
         const deltaY = (e.clientY - lastMousePosRef.current.y) / scale;
-        setPosition((prev) => ({
+        setPosition(prev => ({
           x: prev.x - deltaX,
           y: prev.y - deltaY,
         }));
@@ -116,37 +85,18 @@ const WorkspaceComponent = () => {
       isDraggingRef.current = false;
     };
 
-    container.addEventListener("touchstart", handleTouchStart, { passive: false });
-    container.addEventListener("touchmove", handleTouchMove, { passive: false });
-    container.addEventListener("touchend", handleTouchEnd, { passive: false });
     container.addEventListener("wheel", handleWheel, { passive: false });
     container.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [scale, position, zoom]);
-
-  const getDistance = (touch1, touch2) => {
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const getMidpoint = (touch1, touch2) => {
-    return {
-      x: (touch1.clientX + touch2.clientX) / 2,
-      y: (touch1.clientY + touch2.clientY) / 2,
-    };
-  };
+  }, [scale, zoom]);
 
   return (
     <div className="interactive-viewport">
@@ -157,11 +107,22 @@ const WorkspaceComponent = () => {
           width={dimensions.width} 
           height={dimensions.height}
         />
+        {kards.map(kard => (
+          <KardRenderer 
+            key={kard.uuid}
+            kard={kard}
+            scale={scale}
+            position={position}
+          />
+        ))}
         <div className="viewport-info">
           Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y: {position.y.toFixed(0)}
+          <br />
+          Active Kollection: {activeKollectionUUID}
+          <br />
+          Number of Kards: {kards.length}
         </div>
       </div>
-      Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y: {position.y.toFixed(0)}
     </div>
   );
 };

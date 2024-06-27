@@ -1,29 +1,19 @@
+// src/components/RibbonComponent.js
 import React from 'react';
 import './RibbonComponent.css';
+import ResetToDefault from './ResetToDefault';
 
 const RibbonComponent = () => {
-  const buttons = [
-    { id: 1, label: 'Component 1', color: '#FF0000' }, // Red
-    { id: 2, label: 'Component 2', color: '#00FF00' }, // Green
-    { id: 3, label: 'Component 3', color: '#0000FF' }, // Blue
-    { id: 4, label: 'Component 4', color: '#FFFF00' }, // Yellow
-    { id: 5, label: 'Component 5', color: '#FF00FF' }, // Magenta
-    { id: 6, label: 'Component 6', color: '#00FFFF' }, // Cyan
-    { id: 7, label: 'Component 7', color: '#FFA500' }, // Orange
-    { id: 8, label: 'Component 8', color: '#800080' }, // Purple
-  ];
-
   return (
     <div className="ribbon">
-      {buttons.map((button) => (
-        <div
-          key={button.id}
-          className="ribbon-button"
-          style={{ borderColor: button.color }}
-        >
-          {button.label}
-        </div>
-      ))}
+      <ResetToDefault />
+      <div className="ribbon-button" style={{ borderColor: '#00FF00' }}>Component 2</div>
+      <div className="ribbon-button" style={{ borderColor: '#0000FF' }}>Component 3</div>
+      <div className="ribbon-button" style={{ borderColor: '#FFFF00' }}>Component 4</div>
+      <div className="ribbon-button" style={{ borderColor: '#FF00FF' }}>Component 5</div>
+      <div className="ribbon-button" style={{ borderColor: '#00FFFF' }}>Component 6</div>
+      <div className="ribbon-button" style={{ borderColor: '#FFA500' }}>Component 7</div>
+      <div className="ribbon-button" style={{ borderColor: '#800080' }}>Component 8</div>
     </div>
   );
 };
