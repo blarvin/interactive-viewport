@@ -1,92 +1,32 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  //   useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import GridComponent from "./GridComponent";
 
 const WorkspaceComponent = () => {
-  const GRID_SIZE = 50; // Size of one grid square in pixels
-  const GRID_COLOR = "#cccccc";
-  const LABEL_COLOR = "#999999";
-
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const containerRef = useRef(null);
-  const canvasRef = useRef(null);
   const lastTouchRef = useRef(null);
   const isDraggingRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
 
-  const createGridPattern = useCallback((ctx) => {
-    const patternCanvas = document.createElement("canvas");
-    patternCanvas.width = GRID_SIZE;
-    patternCanvas.height = GRID_SIZE;
-    const patternCtx = patternCanvas.getContext("2d");
-
-    // Draw grid lines
-    patternCtx.strokeStyle = GRID_COLOR;
-    patternCtx.lineWidth = 2;
-    patternCtx.beginPath();
-    patternCtx.moveTo(0, 0);
-    patternCtx.lineTo(GRID_SIZE, 0);
-    patternCtx.moveTo(0, 0);
-    patternCtx.lineTo(0, GRID_SIZE);
-    patternCtx.stroke();
-
-    // Create pattern
-    return ctx.createPattern(patternCanvas, "repeat");
-  }, []);
-
-  const drawGrid = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const { width, height } = canvas.getBoundingClientRect();
-
-    canvas.width = width;
-    canvas.height = height;
-
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.translate(-position.x, -position.y);
-
-    // Fill with grid pattern
-    const pattern = createGridPattern(ctx);
-    ctx.fillStyle = pattern;
-    ctx.fillRect(position.x, position.y, width / scale, height / scale);
-
-    // Draw labels
-    ctx.fillStyle = LABEL_COLOR;
-    const fontSize = Math.max(10, Math.min(14, 12 / scale));
-    ctx.font = `${fontSize}px Arial, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    const startX = Math.floor(position.x / GRID_SIZE);
-    const startY = Math.floor(position.y / GRID_SIZE);
-    const endX = Math.ceil((position.x + width / scale) / GRID_SIZE);
-    const endY = Math.ceil((position.y + height / scale) / GRID_SIZE);
-
-    for (let x = startX; x < endX; x++) {
-      for (let y = startY; y < endY; y++) {
-        const centerX = x * GRID_SIZE + GRID_SIZE / 2;
-        const centerY = y * GRID_SIZE + GRID_SIZE / 2;
-
-        // Only draw label if it will be large enough to be legible
-        if (fontSize * scale >= 6) {
-          ctx.fillText(`${x},${y}`, centerX, centerY);
-        }
-      }
-    }
-
-    ctx.restore();
-  }, [scale, position, createGridPattern]);
-
+  // Effect to set initial dimensions and update on resize
   useEffect(() => {
-    drawGrid();
-  }, [drawGrid]);
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
+
+    updateDimensions(); // Set initial dimensions
+    window.addEventListener('resize', updateDimensions);
+
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   const zoom = useCallback(
     (clientX, clientY, factor) => {
@@ -107,7 +47,7 @@ const WorkspaceComponent = () => {
       });
     },
     [position.x, position.y]
-  ); // Only recreate if position changes
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -121,26 +61,18 @@ const WorkspaceComponent = () => {
       e.preventDefault();
       const touch = e.touches;
 
-      if (
-        lastTouchRef.current &&
-        lastTouchRef.current.length === touch.length
-      ) {
+      if (lastTouchRef.current && lastTouchRef.current.length === touch.length) {
         if (touch.length === 1) {
           // Pan
-          const deltaX =
-            (touch[0].clientX - lastTouchRef.current[0].clientX) / scale;
-          const deltaY =
-            (touch[0].clientY - lastTouchRef.current[0].clientY) / scale;
+          const deltaX = (touch[0].clientX - lastTouchRef.current[0].clientX) / scale;
+          const deltaY = (touch[0].clientY - lastTouchRef.current[0].clientY) / scale;
           setPosition((prev) => ({
             x: prev.x - deltaX,
             y: prev.y - deltaY,
           }));
         } else if (touch.length === 2) {
           // Zoom
-          const prevDist = getDistance(
-            lastTouchRef.current[0],
-            lastTouchRef.current[1]
-          );
+          const prevDist = getDistance(lastTouchRef.current[0], lastTouchRef.current[1]);
           const currentDist = getDistance(touch[0], touch[1]);
           const factor = currentDist / prevDist;
 
@@ -184,12 +116,8 @@ const WorkspaceComponent = () => {
       isDraggingRef.current = false;
     };
 
-    container.addEventListener("touchstart", handleTouchStart, {
-      passive: false,
-    });
-    container.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
+    container.addEventListener("touchstart", handleTouchStart, { passive: false });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
     container.addEventListener("touchend", handleTouchEnd, { passive: false });
     container.addEventListener("wheel", handleWheel, { passive: false });
     container.addEventListener("mousedown", handleMouseDown);
@@ -223,18 +151,17 @@ const WorkspaceComponent = () => {
   return (
     <div className="interactive-viewport">
       <div ref={containerRef} className="viewport-container">
-        <canvas
-          ref={canvasRef}
-          className="viewport-canvas"
-          style={{ width: "100%", height: "100%" }}
+        <GridComponent 
+          scale={scale} 
+          position={position} 
+          width={dimensions.width} 
+          height={dimensions.height}
         />
         <div className="viewport-info">
-          Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
-          {position.y.toFixed(0)}
+          Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y: {position.y.toFixed(0)}
         </div>
       </div>
-      Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y:{" "}
-      {position.y.toFixed(0)}
+      Scale: {scale.toFixed(2)}x | X: {position.x.toFixed(0)} Y: {position.y.toFixed(0)}
     </div>
   );
 };
